@@ -1,68 +1,70 @@
-export default function Signup() {
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+
+export default function Login() {
+  const router = useRouter();
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    const form = e.currentTarget;
+    const email = (form[0] as HTMLInputElement).value;
+    const password = (form[1] as HTMLInputElement).value;
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        router.push('/');
+      } else {
+        setError(data.error || 'Kuch gadbad ho gayi');
+      }
+    } catch {
+      setError('Server se connect nahi ho paya');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#f5f5f5',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center'
-    }}>
-      <div style={{
-        background: 'white',
-        padding: '50px',
-        borderRadius: '15px',
-        boxShadow: '0 5px 30px rgba(0,0,0,0.1)',
-        width: '400px'
-      }}>
-        <h2 style={{textAlign: 'center', fontSize: '28px', marginBottom: '5px'}}>
-          Create Account 🎉
-        </h2>
-        <p style={{textAlign: 'center', color: 'gray', marginBottom: '30px'}}>
-          Join Aalike Fashion Today
-        </p>
+    <div style={{maxWidth:'400px',margin:'100px auto',padding:'2rem',border:'1px solid #eee',borderRadius:'12px'}}>
+      <h2 style={{textAlign:'center'}}>Welcome Back 👋</h2>
+      <p style={{textAlign:'center',color:'gray'}}>Login to Aalike Fashion</p>
 
-        <label style={{fontWeight: 'bold'}}>Full Name</label>
-        <input type="text" placeholder="Enter your name"
-          style={{width: '100%', padding: '12px', border: '2px solid #eee',
-          borderRadius: '8px', fontSize: '16px', marginBottom: '15px',
-          marginTop: '8px', boxSizing: 'border-box'}}
-        />
+      {error && (
+        <div style={{background:'#fee',color:'red',padding:'10px',borderRadius:'8px',marginBottom:'1rem',textAlign:'center'}}>
+          ❌ {error}
+        </div>
+      )}
 
-        <label style={{fontWeight: 'bold'}}>Email</label>
-        <input type="email" placeholder="Enter your email"
-          style={{width: '100%', padding: '12px', border: '2px solid #eee',
-          borderRadius: '8px', fontSize: '16px', marginBottom: '15px',
-          marginTop: '8px', boxSizing: 'border-box'}}
-        />
-
-        <label style={{fontWeight: 'bold'}}>Phone Number</label>
-        <input type="tel" placeholder="Enter your phone number"
-          style={{width: '100%', padding: '12px', border: '2px solid #eee',
-          borderRadius: '8px', fontSize: '16px', marginBottom: '15px',
-          marginTop: '8px', boxSizing: 'border-box'}}
-        />
-
-        <label style={{fontWeight: 'bold'}}>Password</label>
-        <input type="password" placeholder="Create password"
-          style={{width: '100%', padding: '12px', border: '2px solid #eee',
-          borderRadius: '8px', fontSize: '16px', marginBottom: '25px',
-          marginTop: '8px', boxSizing: 'border-box'}}
-        />
-
-        <button style={{width: '100%', padding: '15px', background: 'black',
-          color: 'gold', border: 'none', borderRadius: '8px',
-          fontSize: '18px', fontWeight: 'bold', cursor: 'pointer',
-          marginBottom: '15px'}}>
-          Create Account
+      <form onSubmit={handleSubmit}>
+        <div style={{marginBottom:'1rem'}}>
+          <label><b>Email</b></label>
+          <input type="email" required style={{width:'100%',padding:'10px',marginTop:'5px',borderRadius:'8px',border:'1px solid #ddd'}} />
+        </div>
+        <div style={{marginBottom:'1rem'}}>
+          <label><b>Password</b></label>
+          <input type="password" required style={{width:'100%',padding:'10px',marginTop:'5px',borderRadius:'8px',border:'1px solid #ddd'}} />
+        </div>
+        <button type="submit" disabled={loading} style={{width:'100%',padding:'12px',background:'black',color:'yellow',border:'none',borderRadius:'8px',fontSize:'16px',cursor:'pointer'}}>
+          {loading ? 'Logging in...' : 'Login'}
         </button>
+      </form>
 
-        <p style={{textAlign: 'center', color: 'gray'}}>
-          Already have account?{' '}
-          <a href="/login" style={{color: 'black', fontWeight: 'bold'}}>
-            Login
-          </a>
-        </p>
-      </div>
+      <p style={{textAlign:'center',marginTop:'1rem'}}>
+        New here? <a href="/signup">Create Account</a>
+      </p>
     </div>
   );
 }
