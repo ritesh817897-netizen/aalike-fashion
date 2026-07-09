@@ -31,4 +31,23 @@ export async function POST(request: NextRequest) {
       { expiresIn: '7d' }
     );
 
-    const response =
+    const response = NextResponse.json({
+      message: 'Login successful!',
+      user: { id: user._id, name: user.name, email: user.email, role: user.role }
+    }, { status: 200 });
+
+    response.cookies.set('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7,
+      path: '/',
+    });
+
+    return response;
+
+  } catch (error) {
+    console.error('Login error:', error);
+    return NextResponse.json({ error: 'Kuch gadbad ho gayi' }, { status: 500 });
+  }
+}
