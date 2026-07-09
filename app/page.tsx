@@ -1,12 +1,37 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+
+interface Product {
+  _id: string;
+  name: string;
+  description: string;
+  price: number;
+  discountPrice: number;
+  category: string;
+  images: string[];
+  stock: number;
+}
+
 export default function Home() {
-  const products = [
-    { id: 1, name: "Black Oversized Tshirt", price: 599, mrp: 999, category: "Men", image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400" },
-    { id: 2, name: "White Hoodie", price: 899, mrp: 1499, category: "Women", image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400" },
-    { id: 3, name: "Blue Cargo Pants", price: 1099, mrp: 1799, category: "Men", image: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=400" },
-    { id: 4, name: "Pink Crop Top", price: 499, mrp: 799, category: "Women", image: "https://images.unsplash.com/photo-1551163943-3f7253a97697?w=400" },
-    { id: 5, name: "Kids Printed Tshirt", price: 349, mrp: 599, category: "Kids", image: "https://images.unsplash.com/photo-1622290291468-a28f7a7dc6a8?w=400" },
-    { id: 6, name: "Denim Jacket", price: 1499, mrp: 2499, category: "Men", image: "https://images.unsplash.com/photo-1576995853123-5a10305d93c0?w=400" },
-  ];
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const res = await fetch('/api/products');
+        const data = await res.json();
+        setProducts(data.products || []);
+      } catch (err) {
+        console.log(err);
+      }
+      setLoading(false);
+    }
+    loadProducts();
+  }, []);
+
+  const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400';
 
   return (
     <div style={{fontFamily: 'sans-serif'}}>
@@ -71,26 +96,48 @@ export default function Home() {
       <div style={{padding:'40px 0', background:'white'}}>
         <h2 style={{textAlign:'center', fontSize:'28px', marginBottom:'8px'}}>Our Products</h2>
         <p style={{textAlign:'center', color:'gray', marginBottom:'30px'}}>Premium Quality Fashion</p>
-        <div className="products-grid">
-          {products.map((product)=>(
-            <div key={product.id} style={{border:'1px solid #eee', borderRadius:'10px', overflow:'hidden', boxShadow:'0 2px 10px rgba(0,0,0,0.1)'}}>
-              <img src={product.image} alt={product.name} style={{width:'100%', height:'200px', objectFit:'cover'}}/>
-              <div style={{padding:'12px'}}>
-                <p style={{fontSize:'11px', color:'gray', marginBottom:'4px'}}>{product.category}</p>
-                <h3 style={{fontSize:'14px', margin:'0 0 8px'}}>{product.name}</h3>
-                <div style={{display:'flex', alignItems:'center', gap:'8px', marginBottom:'10px', flexWrap:'wrap'}}>
-                  <span style={{fontSize:'18px', fontWeight:'bold'}}>₹{product.price}</span>
-                  <span style={{fontSize:'12px', color:'gray', textDecoration:'line-through'}}>₹{product.mrp}</span>
-                  <span style={{fontSize:'11px', color:'green', fontWeight:'bold'}}>{Math.round((1-product.price/product.mrp)*100)}% OFF</span>
+
+        {loading ? (
+          <p style={{textAlign:'center', color:'gray'}}>Loading products...</p>
+        ) : products.length === 0 ? (
+          <p style={{textAlign:'center', color:'gray'}}>Koi product nahi mila. Admin Panel se product add karo.</p>
+        ) : (
+          <div className="products-grid">
+            {products.map((product) => {
+              const hasDiscount = product.discountPrice > 0 && product.discountPrice < product.price;
+              const displayPrice = hasDiscount ? product.discountPrice : product.price;
+              const image = (product.images && product.images[0]) || FALLBACK_IMAGE;
+
+              return (
+                <div key={product._id} style={{border:'1px solid #eee', borderRadius:'10px', overflow:'hidden', boxShadow:'0 2px 10px rgba(0,0,0,0.1)'}}>
+                  <img src={image} alt={product.name} style={{width:'100%', height:'200px', objectFit:'cover'}}/>
+                  <div style={{padding:'12px'}}>
+                    <p style={{fontSize:'11px', color:'gray', marginBottom:'4px'}}>{product.category}</p>
+                    <h3 style={{fontSize:'14px', margin:'0 0 8px'}}>{product.name}</h3>
+                    <div style={{display:'flex', alignItems:'center', gap:'8px', marginBottom:'10px', flexWrap:'wrap'}}>
+                      <span style={{fontSize:'18px', fontWeight:'bold'}}>₹{displayPrice}</span>
+                      {hasDiscount && (
+                        <>
+                          <span style={{fontSize:'12px', color:'gray', textDecoration:'line-through'}}>₹{product.price}</span>
+                          <span style={{fontSize:'11px', color:'green', fontWeight:'bold'}}>
+                            {Math.round((1 - product.discountPrice / product.price) * 100)}% OFF
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    {product.stock === 0 && (
+                      <p style={{fontSize:'11px', color:'red', fontWeight:'bold', marginBottom:'8px'}}>Out of Stock</p>
+                    )}
+                    <div style={{display:'flex', gap:'8px'}}>
+                      <button style={{flex:1, background:'black', color:'gold', padding:'10px 5px', border:'none', cursor:'pointer', borderRadius:'5px', fontWeight:'bold', fontSize:'12px'}}>🛒 Cart</button>
+                      <button style={{flex:1, background:'gold', color:'black', padding:'10px 5px', border:'none', cursor:'pointer', borderRadius:'5px', fontWeight:'bold', fontSize:'12px'}}>Buy Now</button>
+                    </div>
+                  </div>
                 </div>
-                <div style={{display:'flex', gap:'8px'}}>
-                  <button style={{flex:1, background:'black', color:'gold', padding:'10px 5px', border:'none', cursor:'pointer', borderRadius:'5px', fontWeight:'bold', fontSize:'12px'}}>🛒 Cart</button>
-                  <button style={{flex:1, background:'gold', color:'black', padding:'10px 5px', border:'none', cursor:'pointer', borderRadius:'5px', fontWeight:'bold', fontSize:'12px'}}>Buy Now</button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Footer */}
