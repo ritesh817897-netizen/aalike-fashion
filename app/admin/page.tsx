@@ -19,27 +19,30 @@ interface Product {
   washCare: string;
 }
 
+const emptyForm = {
+  name: '',
+  description: '',
+  price: '',
+  discountPrice: '',
+  category: '',
+  images: '',
+  sizes: '',
+  colors: '',
+  stock: '',
+  fit: '',
+  fabric: '',
+  sleeve: '',
+  washCare: '',
+};
+
 export default function Admin() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [message, setMessage] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
 
-  const [form, setForm] = useState({
-    name: '',
-    description: '',
-    price: '',
-    discountPrice: '',
-    category: '',
-    images: '',
-    sizes: '',
-    colors: '',
-    stock: '',
-    fit: '',
-    fabric: '',
-    sleeve: '',
-    washCare: '',
-  });
+  const [form, setForm] = useState(emptyForm);
 
   async function loadProducts() {
     setLoading(true);
@@ -57,7 +60,43 @@ export default function Admin() {
     loadProducts();
   }, []);
 
-  async function handleAddProduct(e: React.FormEvent) {
+  function handleAddNewClick() {
+    setEditingId(null);
+    setForm(emptyForm);
+    setMessage('');
+    setShowForm(!showForm);
+  }
+
+  function handleEditClick(product: Product) {
+    setEditingId(product._id);
+    setForm({
+      name: product.name,
+      description: product.description,
+      price: String(product.price),
+      discountPrice: product.discountPrice ? String(product.discountPrice) : '',
+      category: product.category,
+      images: (product.images || []).join(', '),
+      sizes: (product.sizes || []).join(', '),
+      colors: (product.colors || []).join(', '),
+      stock: String(product.stock),
+      fit: product.fit || '',
+      fabric: product.fabric || '',
+      sleeve: product.sleeve || '',
+      washCare: product.washCare || '',
+    });
+    setMessage('');
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function handleCancel() {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(emptyForm);
+    setMessage('');
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setMessage('');
 
@@ -78,8 +117,11 @@ export default function Admin() {
     };
 
     try {
-      const res = await fetch('/api/products', {
-        method: 'POST',
+      const url = editingId ? `/api/products/${editingId}` : '/api/products';
+      const method = editingId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
@@ -87,11 +129,9 @@ export default function Admin() {
       const data = await res.json();
 
       if (res.ok) {
-        setMessage('✅ Product add ho gaya!');
-        setForm({
-          name: '', description: '', price: '', discountPrice: '', category: '',
-          images: '', sizes: '', colors: '', stock: '', fit: '', fabric: '', sleeve: '', washCare: '',
-        });
+        setMessage(editingId ? '✅ Product update ho gaya!' : '✅ Product add ho gaya!');
+        setForm(emptyForm);
+        setEditingId(null);
         setShowForm(false);
         loadProducts();
       } else {
@@ -165,7 +205,7 @@ export default function Admin() {
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
             <h3 style={{ fontSize: '22px' }}>👕 Products</h3>
             <button
-              onClick={() => setShowForm(!showForm)}
+              onClick={handleAddNewClick}
               style={{
                 background: 'black', color: 'gold', border: 'none',
                 padding: '10px 20px', borderRadius: '8px',
@@ -176,9 +216,13 @@ export default function Admin() {
           </div>
 
           {showForm && (
-            <form onSubmit={handleAddProduct} style={{
+            <form onSubmit={handleSubmit} style={{
               background: '#f9f9f9', padding: '20px', borderRadius: '10px', marginBottom: '25px'
             }}>
+              <h4 style={{ marginBottom: '15px' }}>
+                {editingId ? '✏️ Product Edit karo' : '➕ Naya Product'}
+              </h4>
+
               {message && (
                 <div style={{
                   padding: '10px', borderRadius: '8px', marginBottom: '15px',
@@ -258,12 +302,23 @@ export default function Admin() {
                   onChange={(e) => setForm({ ...form, description: e.target.value })} />
               </div>
 
-              <button type="submit" style={{
-                marginTop: '15px', background: 'black', color: 'gold', border: 'none',
-                padding: '12px 30px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'
-              }}>
-                Save Product
-              </button>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+                <button type="submit" style={{
+                  background: 'black', color: 'gold', border: 'none',
+                  padding: '12px 30px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'
+                }}>
+                  {editingId ? 'Update Product' : 'Save Product'}
+                </button>
+
+                {editingId && (
+                  <button type="button" onClick={handleCancel} style={{
+                    background: '#eee', color: '#333', border: 'none',
+                    padding: '12px 30px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'
+                  }}>
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
             </form>
           )}
 
@@ -295,12 +350,20 @@ export default function Admin() {
                       </span>
                     </td>
                     <td style={{ padding: '12px' }}>
-                      <button
-                        onClick={() => handleDelete(product._id)}
-                        style={{
-                          background: 'red', color: 'white', border: 'none',
-                          padding: '5px 12px', borderRadius: '5px', cursor: 'pointer'
-                        }}>Delete</button>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          onClick={() => handleEditClick(product)}
+                          style={{
+                            background: '#2196F3', color: 'white', border: 'none',
+                            padding: '5px 12px', borderRadius: '5px', cursor: 'pointer'
+                          }}>Edit</button>
+                        <button
+                          onClick={() => handleDelete(product._id)}
+                          style={{
+                            background: 'red', color: 'white', border: 'none',
+                            padding: '5px 12px', borderRadius: '5px', cursor: 'pointer'
+                          }}>Delete</button>
+                      </div>
                     </td>
                   </tr>
                 ))}
