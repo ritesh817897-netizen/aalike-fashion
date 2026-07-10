@@ -44,7 +44,7 @@ export default function Cart() {
       window.location.href = '/login';
       return;
     }
-    alert('Checkout aage ban raha hai, jaldi aayega! 🚧');
+    window.location.href = '/checkout';
   }
 
   const total = getCartTotal();
