@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { addToCart as addToCartStorage } from '@/lib/cart';
 
 interface Product {
   _id: string;
@@ -16,6 +17,7 @@ interface Product {
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [addedId, setAddedId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadProducts() {
@@ -32,6 +34,23 @@ export default function Home() {
   }, []);
 
   const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400';
+
+  function addToCart(product: Product) {
+    const displayPrice =
+      product.discountPrice > 0 && product.discountPrice < product.price
+        ? product.discountPrice
+        : product.price;
+
+    addToCartStorage({
+      productId: product._id,
+      name: product.name,
+      price: displayPrice,
+      image: (product.images && product.images[0]) || FALLBACK_IMAGE,
+    });
+
+    setAddedId(product._id);
+    setTimeout(() => setAddedId(null), 1500);
+  }
 
   return (
     <div style={{fontFamily: 'sans-serif'}}>
@@ -129,7 +148,12 @@ export default function Home() {
                       <p style={{fontSize:'11px', color:'red', fontWeight:'bold', marginBottom:'8px'}}>Out of Stock</p>
                     )}
                     <div style={{display:'flex', gap:'8px'}}>
-                      <button style={{flex:1, background:'black', color:'gold', padding:'10px 5px', border:'none', cursor:'pointer', borderRadius:'5px', fontWeight:'bold', fontSize:'12px'}}>🛒 Cart</button>
+                      <button
+                        onClick={() => addToCart(product)}
+                        disabled={product.stock === 0}
+                        style={{flex:1, background: addedId === product._id ? 'green' : 'black', color: addedId === product._id ? 'white' : 'gold', padding:'10px 5px', border:'none', cursor: product.stock === 0 ? 'not-allowed' : 'pointer', borderRadius:'5px', fontWeight:'bold', fontSize:'12px', opacity: product.stock === 0 ? 0.5 : 1}}>
+                        {addedId === product._id ? '✓ Added' : '🛒 Cart'}
+                      </button>
                       <button style={{flex:1, background:'gold', color:'black', padding:'10px 5px', border:'none', cursor:'pointer', borderRadius:'5px', fontWeight:'bold', fontSize:'12px'}}>Buy Now</button>
                     </div>
                   </div>
