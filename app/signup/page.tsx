@@ -29,7 +29,7 @@ export default function Signup() {
       const data = await res.json();
 
       if (res.ok) {
-        router.push('/login');
+        router.push(`/verify-otp?email=${encodeURIComponent(form.email)}`);
       } else {
         setError(data.error || 'Registration failed');
       }

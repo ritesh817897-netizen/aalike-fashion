@@ -23,6 +23,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email ya password galat hai' }, { status: 401 });
     }
 
+    if (!user.isVerified) {
+      return NextResponse.json({
+        error: 'Pehle apna email verify karo',
+        needsVerification: true,
+        email: user.email
+      }, { status: 403 });
+    }
+
     const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-this';
 
     const token = jwt.sign(
@@ -32,10 +40,10 @@ export async function POST(request: NextRequest) {
     );
 
     const response = NextResponse.json({
-  message: 'Login successful!',
-  token: token,
-  user: { id: user._id, name: user.name, email: user.email, role: user.role }
-}, { status: 200 });
+      message: 'Login successful!',
+      token: token,
+      user: { id: user._id, name: user.name, email: user.email, role: user.role }
+    }, { status: 200 });
 
     response.cookies.set('token', token, {
       httpOnly: true,
