@@ -11,7 +11,7 @@ function getUserId(req: NextRequest): string | null {
   const token = authHeader.replace("Bearer ", "");
   try {
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET as string);
-    return decoded.userId;
+    return decoded.id;
   } catch {
     return null;
   }
