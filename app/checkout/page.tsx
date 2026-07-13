@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getCart, getCartTotal, clearCart, CartItem } from '@/lib/cart';
+import { getCart, getCartTotal, clearCart, getBuyNow, clearBuyNow, CartItem } from '@/lib/cart';
 
 export default function Checkout() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [isBuyNow, setIsBuyNow] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [placing, setPlacing] = useState(false);
 
@@ -21,6 +22,17 @@ export default function Checkout() {
       return;
     }
 
+    // Pehle check karo koi "Buy Now" item hai kya
+    const buyNowItem = getBuyNow();
+
+    if (buyNowItem) {
+      setCartItems([buyNowItem]);
+      setIsBuyNow(true);
+      setLoaded(true);
+      return;
+    }
+
+    // Warna normal cart se checkout
     const cart = getCart();
     if (cart.length === 0) {
       alert('Tumhara cart khaali hai');
@@ -32,7 +44,9 @@ export default function Checkout() {
     setLoaded(true);
   }, []);
 
-  const total = getCartTotal();
+  const total = isBuyNow
+    ? cartItems.reduce((sum, item) => sum + item.price * item.qty, 0)
+    : getCartTotal();
 
   async function placeOrder() {
     if (!street || !city || !state || !pincode) {
@@ -61,7 +75,11 @@ export default function Checkout() {
       const data = await res.json();
 
       if (res.ok) {
-        clearCart();
+        if (isBuyNow) {
+          clearBuyNow();
+        } else {
+          clearCart();
+        }
         alert('Order successfully place ho gaya! 🎉 Order ID: ' + data.order.orderId);
         window.location.href = '/';
       } else {
@@ -88,7 +106,9 @@ export default function Checkout() {
         <a href="/" style={{color: 'gold', fontSize: '24px', textDecoration: 'none', fontWeight: 'bold'}}>
           AALIKE FASHION
         </a>
-        <a href="/cart" style={{color: 'white', textDecoration: 'none'}}>← Back to Cart</a>
+        <a href={isBuyNow ? '/' : '/cart'} style={{color: 'white', textDecoration: 'none'}}>
+          ← {isBuyNow ? 'Back to Shopping' : 'Back to Cart'}
+        </a>
       </header>
 
       <div style={{maxWidth: '900px', margin: '40px auto', padding: '0 20px'}}>
@@ -151,6 +171,12 @@ export default function Checkout() {
           <div style={{background: 'white', borderRadius: '10px',
             padding: '25px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', height: 'fit-content'}}>
             <h3 style={{fontSize: '22px', marginBottom: '20px'}}>Order Summary</h3>
+
+            {isBuyNow && (
+              <p style={{background: '#fff8e1', color: '#946c00', padding: '8px 12px', borderRadius: '6px', fontSize: '13px', marginBottom: '15px'}}>
+                ⚡ Buy Now — sirf ye product order hoga (cart alag hai)
+              </p>
+            )}
 
             {cartItems.map((item) => (
               <div key={item.productId + (item.size || '')} style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>

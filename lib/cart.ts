@@ -12,6 +12,7 @@ export interface CartItem {
 
 const CART_KEY = 'aalike_cart';
 const CART_EVENT = 'aalike-cart-updated';
+const BUY_NOW_KEY = 'aalike_buy_now';
 
 export function getCart(): CartItem[] {
   if (typeof window === 'undefined') return [];
@@ -85,4 +86,29 @@ export function onCartChange(callback: () => void): () => void {
     window.removeEventListener(CART_EVENT, callback);
     window.removeEventListener('storage', callback);
   };
+}
+
+// ---- Buy Now ----
+// "Buy Now" ek single product ko turant checkout tak le jaata hai,
+// cart ko touch kiye bina. Sirf sessionStorage mein rakhte hain
+// (tab band hote hi clear ho jaye, taaki purana "buy now" item baar-baar reuse na ho).
+
+export function setBuyNow(item: CartItem) {
+  if (typeof window === 'undefined') return;
+  sessionStorage.setItem(BUY_NOW_KEY, JSON.stringify(item));
+}
+
+export function getBuyNow(): CartItem | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(BUY_NOW_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearBuyNow() {
+  if (typeof window === 'undefined') return;
+  sessionStorage.removeItem(BUY_NOW_KEY);
 }

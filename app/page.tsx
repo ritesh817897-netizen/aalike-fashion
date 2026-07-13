@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { addToCart as addToCartStorage } from '@/lib/cart';
+import { useRouter } from 'next/navigation';
+import { addToCart, getCartCount, setBuyNow, onCartChange } from '@/lib/cart';
 
 interface Product {
   _id: string;
@@ -15,9 +16,11 @@ interface Product {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [addedId, setAddedId] = useState<string | null>(null);
+  const [cartCount, setCartCount] = useState(0);
+  const [toast, setToast] = useState('');
 
   useEffect(() => {
     async function loadProducts() {
@@ -31,25 +34,43 @@ export default function Home() {
       setLoading(false);
     }
     loadProducts();
+    setCartCount(getCartCount());
+
+    const unsubscribe = onCartChange(() => setCartCount(getCartCount()));
+    return unsubscribe;
   }, []);
 
   const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400';
 
-  function addToCart(product: Product) {
-    const displayPrice =
-      product.discountPrice > 0 && product.discountPrice < product.price
-        ? product.discountPrice
-        : product.price;
-
-    addToCartStorage({
+  function getProductCartData(product: Product) {
+    const hasDiscount = product.discountPrice > 0 && product.discountPrice < product.price;
+    const image = (product.images && product.images[0]) || FALLBACK_IMAGE;
+    return {
       productId: product._id,
       name: product.name,
-      price: displayPrice,
-      image: (product.images && product.images[0]) || FALLBACK_IMAGE,
-    });
+      price: hasDiscount ? product.discountPrice : product.price,
+      image,
+    };
+  }
 
-    setAddedId(product._id);
-    setTimeout(() => setAddedId(null), 1500);
+  function handleAddToCart(product: Product) {
+    addToCart(getProductCartData(product));
+    setToast(`✅ ${product.name} cart mein add ho gaya!`);
+    setTimeout(() => setToast(''), 2000);
+  }
+
+  function handleBuyNow(product: Product) {
+    const item = { ...getProductCartData(product), qty: 1 };
+    setBuyNow(item);
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Buy Now ke liye pehle Login karo!');
+      router.push('/login');
+      return;
+    }
+
+    router.push('/checkout');
   }
 
   return (
@@ -74,6 +95,17 @@ export default function Home() {
         }
       `}</style>
 
+      {/* Toast message */}
+      {toast && (
+        <div style={{
+          position: 'fixed', top: '80px', right: '20px', zIndex: 999,
+          background: 'black', color: 'gold', padding: '12px 20px',
+          borderRadius: '8px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)', fontSize: '14px'
+        }}>
+          {toast}
+        </div>
+      )}
+
       {/* Header */}
       <header style={{background:'black', padding:'15px 20px', display:'flex', justifyContent:'space-between', alignItems:'center', position:'sticky', top:0, zIndex:100}}>
         <h1 style={{color:'gold', fontSize:'22px', letterSpacing:'2px'}}>AALIKE FASHION</h1>
@@ -81,11 +113,20 @@ export default function Home() {
           <a href="#" style={{color:'white', textDecoration:'none'}}>Men</a>
           <a href="#" style={{color:'white', textDecoration:'none'}}>Women</a>
           <a href="#" style={{color:'white', textDecoration:'none'}}>Kids</a>
-          <a href="/cart" style={{color:'gold', textDecoration:'none'}}>Cart 🛒</a>
+          <a href="/cart" style={{color:'gold', textDecoration:'none'}}>Cart 🛒 {cartCount > 0 && `(${cartCount})`}</a>
           <a href="/login" style={{color:'gold', textDecoration:'none'}}>Login</a>
         </nav>
-        <div style={{display:'flex', gap:'10px'}}>
-          <a href="/cart" style={{color:'gold', textDecoration:'none', fontSize:'22px'}}>🛒</a>
+        <div style={{display:'flex', gap:'10px', alignItems:'center'}}>
+          <a href="/cart" style={{color:'gold', textDecoration:'none', fontSize:'22px', position:'relative'}}>
+            🛒
+            {cartCount > 0 && (
+              <span style={{
+                position:'absolute', top:'-8px', right:'-10px', background:'red', color:'white',
+                fontSize:'11px', borderRadius:'50%', width:'18px', height:'18px',
+                display:'flex', alignItems:'center', justifyContent:'center', fontWeight:'bold'
+              }}>{cartCount}</span>
+            )}
+          </a>
           <a href="/login" style={{color:'gold', textDecoration:'none', fontSize:'14px', border:'1px solid gold', padding:'5px 10px', borderRadius:'5px'}}>Login</a>
         </div>
       </header>
@@ -126,6 +167,7 @@ export default function Home() {
               const hasDiscount = product.discountPrice > 0 && product.discountPrice < product.price;
               const displayPrice = hasDiscount ? product.discountPrice : product.price;
               const image = (product.images && product.images[0]) || FALLBACK_IMAGE;
+              const outOfStock = product.stock === 0;
 
               return (
                 <div key={product._id} style={{border:'1px solid #eee', borderRadius:'10px', overflow:'hidden', boxShadow:'0 2px 10px rgba(0,0,0,0.1)'}}>
@@ -144,17 +186,26 @@ export default function Home() {
                         </>
                       )}
                     </div>
-                    {product.stock === 0 && (
+                    {outOfStock && (
                       <p style={{fontSize:'11px', color:'red', fontWeight:'bold', marginBottom:'8px'}}>Out of Stock</p>
                     )}
                     <div style={{display:'flex', gap:'8px'}}>
                       <button
-                        onClick={() => addToCart(product)}
-                        disabled={product.stock === 0}
-                        style={{flex:1, background: addedId === product._id ? 'green' : 'black', color: addedId === product._id ? 'white' : 'gold', padding:'10px 5px', border:'none', cursor: product.stock === 0 ? 'not-allowed' : 'pointer', borderRadius:'5px', fontWeight:'bold', fontSize:'12px', opacity: product.stock === 0 ? 0.5 : 1}}>
-                        {addedId === product._id ? '✓ Added' : '🛒 Cart'}
-                      </button>
-                      <button style={{flex:1, background:'gold', color:'black', padding:'10px 5px', border:'none', cursor:'pointer', borderRadius:'5px', fontWeight:'bold', fontSize:'12px'}}>Buy Now</button>
+                        disabled={outOfStock}
+                        onClick={() => handleAddToCart(product)}
+                        style={{
+                          flex:1, background: outOfStock ? '#999' : 'black', color:'gold',
+                          padding:'10px 5px', border:'none', cursor: outOfStock ? 'not-allowed' : 'pointer',
+                          borderRadius:'5px', fontWeight:'bold', fontSize:'12px'
+                        }}>🛒 Cart</button>
+                      <button
+                        disabled={outOfStock}
+                        onClick={() => handleBuyNow(product)}
+                        style={{
+                          flex:1, background: outOfStock ? '#ccc' : 'gold', color:'black',
+                          padding:'10px 5px', border:'none', cursor: outOfStock ? 'not-allowed' : 'pointer',
+                          borderRadius:'5px', fontWeight:'bold', fontSize:'12px'
+                        }}>Buy Now</button>
                     </div>
                   </div>
                 </div>
