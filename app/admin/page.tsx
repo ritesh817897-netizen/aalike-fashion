@@ -174,7 +174,10 @@ export default function Admin() {
         display: 'flex', justifyContent: 'space-between', alignItems: 'center'
       }}>
         <h1 style={{ color: 'gold', fontSize: '22px' }}>AALIKE FASHION — Admin Panel</h1>
-        <a href="/" style={{ color: 'white', textDecoration: 'none' }}>View Website →</a>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <a href="/admin/orders" style={{ color: 'gold', textDecoration: 'none', marginRight: '20px' }}>📦 Manage Orders</a>
+          <a href="/" style={{ color: 'white', textDecoration: 'none' }}>View Website →</a>
+        </div>
       </header>
 
       <div style={{ padding: '30px' }}>

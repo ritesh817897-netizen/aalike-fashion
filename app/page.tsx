@@ -113,6 +113,7 @@ export default function Home() {
           <a href="#" style={{color:'white', textDecoration:'none'}}>Men</a>
           <a href="#" style={{color:'white', textDecoration:'none'}}>Women</a>
           <a href="#" style={{color:'white', textDecoration:'none'}}>Kids</a>
+          <a href="/orders" style={{color:'white', textDecoration:'none'}}>My Orders</a>
           <a href="/cart" style={{color:'gold', textDecoration:'none'}}>Cart 🛒 {cartCount > 0 && `(${cartCount})`}</a>
           <a href="/login" style={{color:'gold', textDecoration:'none'}}>Login</a>
         </nav>

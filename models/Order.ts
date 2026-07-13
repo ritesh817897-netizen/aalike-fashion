@@ -38,6 +38,18 @@ const OrderSchema = new mongoose.Schema({
     enum: ['Pending', 'Confirmed', 'Packed', 'Shipped', 'Delivered', 'Cancelled', 'Returned'],
     default: 'Pending'
   },
+  courierName: {
+    type: String,
+    default: ''
+  },
+  trackingNumber: {
+    type: String,
+    default: ''
+  },
+  statusHistory: [{
+    status: String,
+    date: { type: Date, default: Date.now }
+  }],
   orderId: {
     type: String,
     unique: true

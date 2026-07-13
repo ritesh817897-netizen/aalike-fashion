@@ -3,7 +3,6 @@ import jwt from "jsonwebtoken";
 import connectDB from "@/lib/db";
 import Order from "@/models/Order";
 
-// Helper: token se userId nikalna
 function getUserId(req: NextRequest): string | null {
   const authHeader = req.headers.get("authorization");
   if (!authHeader) return null;
@@ -17,7 +16,19 @@ function getUserId(req: NextRequest): string | null {
   }
 }
 
-// POST: naya order banana
+function getUserRole(req: NextRequest): string | null {
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader) return null;
+
+  const token = authHeader.replace("Bearer ", "");
+  try {
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET as string);
+    return decoded.role;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     await connectDB();
@@ -42,6 +53,8 @@ export async function POST(req: NextRequest) {
       address,
       paymentMethod: paymentMethod || "COD",
       orderId,
+      orderStatus: "Pending",
+      statusHistory: [{ status: "Pending", date: new Date() }],
     });
 
     await order.save();
@@ -53,7 +66,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET: customer ke saare orders dikhana
 export async function GET(req: NextRequest) {
   try {
     await connectDB();
@@ -63,7 +75,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Login zaroori hai" }, { status: 401 });
     }
 
-    const orders = await Order.find({ user: userId }).sort({ createdAt: -1 });
+    const role = getUserRole(req);
+    const isAdmin = role === "admin";
+    const url = new URL(req.url);
+    const wantsAll = url.searchParams.get("all") === "true";
+
+    const query = isAdmin && wantsAll ? {} : { user: userId };
+
+    const orders = await Order.find(query).sort({ createdAt: -1 });
 
     return NextResponse.json({ orders });
   } catch (error) {
